@@ -12,7 +12,11 @@ class Conan_ui(QtGui.QMainWindow):
         self.area_2()
         self.area_3()
         self.area_4()
-        self.dir_path = 'd:\\'    #默认安装路径
+        if self.get_ini('setting.ini', 'serverpath', 'serverpath'):    #从setting.ini中读取上次保存的服务端路径
+            self.ledt1.setText(self.get_ini('setting.ini', 'serverpath', 'serverpath'))
+            self.dir_path = self.get_ini('setting.ini', 'serverpath', 'serverpath')    
+        else:
+            self.dir_path = 'd:\\'
         self.chkb1_value = 'False'  #单选框的默认值
         self.chkb2_value = 'False'
         self.main_window()
@@ -30,20 +34,20 @@ class Conan_ui(QtGui.QMainWindow):
         self.btn1.clicked.connect(self.select_dir)    #点击按钮选择安装路径
         
         self.btn_ex1 = QtGui.QPushButton(u'读取服务端设置', self)
-        self.btn_ex1.setGeometry(590, 10, 100, 30)
+        self.btn_ex1.setGeometry(585, 10, 100, 30)
         self.btn_ex1.clicked.connect(self.set_default)
         
-        self.btn2 = QtGui.QPushButton(u'安装', self)    #安装按钮
-        self.btn2.setGeometry(700, 10, 50, 30)
+        self.btn2 = QtGui.QPushButton(u'安装/更新', self)    #安装按钮
+        self.btn2.setGeometry(700, 10, 80, 30)
         self.btn2.clicked.connect(self.multi_proc_download)    #点击按钮安装steamcmd和服务端 
     
     def area_2(self):
-        self.btn3 = QtGui.QPushButton('start server', self)
+        self.btn3 = QtGui.QPushButton('start', self)
         self.btn3.setGeometry(10, 55, 110, 40)
         self.btn3.setIcon(QtGui.QIcon('image\start.png'))
         self.btn3.clicked.connect(self.multi_proc_start)
         
-        self.btn4 = QtGui.QPushButton('stop server', self)
+        self.btn4 = QtGui.QPushButton('stop', self)
         self.btn4.setGeometry(130, 55, 110, 40)
         self.btn4.setIcon(QtGui.QIcon('image\stop.png'))
         self.btn4.clicked.connect(self.ctrl_c)
@@ -163,9 +167,7 @@ class Conan_ui(QtGui.QMainWindow):
         self.lbl18.move(10 + area_4_x*3, area_4_y+135)
         self.ledt16 = QtGui.QLineEdit(self)
         self.ledt16.setGeometry(80 + area_4_x*3, area_4_y+135, 80, 30)
-        
-
-    
+            
     def main_window(self):
         self.setGeometry(300, 300, 800, 600)    #主窗口
         self.setWindowTitle(u"流放者柯南服务端管理器   Ver 1.0")
@@ -177,30 +179,36 @@ class Conan_ui(QtGui.QMainWindow):
 
     def install_steamcmd(self):    #安装steamcmd并且安装柯南服务端
         zip_path = os.path.join(self.dir_path, 'steamcmd.zip') #保存路径
-
-        if os.path.exists(zip_path):
-            self.error_jump('steamcmd.zip already exist!')
+        if os.path.exists(self.dir_path):
+            self.statusBar().showMessage('update conan server...')
+            os.system('%s\steamcmd\steamcmd.exe +force_install_dir %s +login anonymous +app_update 443030 validate' % (self.dir_path, self.dir_path)) #运行steamcmd.exe,并下载服务端
         else:
-            self.statusBar().showMessage("downloading steamcmd...")
-            urllib.urlretrieve("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip", zip_path) #开始下载
-
-        if os.path.exists(self.dir_path + '\steamcmd\steamcmd.exe'):
-            self.error_jump('steamcmd.exe already exist!')
-        else:
-            self.statusBar().showMessage('unzipping steamcmd.zip')
-            steamzip = zipfile.ZipFile(zip_path)  #读取zip文件
-            steamzip.extractall(self.dir_path +'\steamcmd')  #解压路径
-            steamzip.close()
-            if os.path.exists(zip_path):  #删除zip文件
-                os.remove(zip_path)
-            if os.path.exists(self.dir_path + '\\conanexiles\\ConanSandboxServer.exe'):
-                self.error_jump(u'路径中已有服务端文件，请确认')
+            os.mkdir(self.dir_path)
+        
+            if os.path.exists(zip_path):
+                self.error_jump('steamcmd.zip already exist!')
             else:
-                self.statusBar().showMessage('download conan server...')
-                os.system('%s\steamcmd\steamcmd.exe +force_install_dir %s\conanexiles +login anonymous +app_update 443030 validate' % (self.dir_path, self.dir_path)) #运行steamcmd.exe,并下载服务端
+                self.statusBar().showMessage("downloading steamcmd...")
+                urllib.urlretrieve("https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip", zip_path) #开始下载
+
+            if os.path.exists(self.dir_path + '\steamcmd\steamcmd.exe'):
+                self.error_jump('steamcmd.exe already exist!')
+            else:
+                self.statusBar().showMessage('unzipping steamcmd.zip')
+                steamzip = zipfile.ZipFile(zip_path)  #读取zip文件
+                steamzip.extractall(self.dir_path +'\steamcmd')  #解压路径
+                steamzip.close()
+                if os.path.exists(zip_path):  #删除zip文件
+                    os.remove(zip_path)
+                if os.path.exists(self.dir_path + '\ConanSandboxServer.exe'):
+                    self.error_jump(u'路径中已有服务端文件，请确认')
+                else:
+                    self.statusBar().showMessage('download conan server...')
+                    os.system('%s\steamcmd\steamcmd.exe +force_install_dir %s +login anonymous +app_update 443030 validate' % (self.dir_path, self.dir_path)) #运行steamcmd.exe,并下载服务端
     
     def select_dir(self):    #弹出选择路径窗口
-        self.dir_path = unicode(QtGui.QFileDialog.getExistingDirectory(self, u"选择服务端安装路径", "D:\\"))
+        self.dir_path = unicode(QtGui.QFileDialog.getExistingDirectory(self, u"选择服务端安装路径", "D:\\")) + 'conanexiles'
+        self.modify_ini('setting.ini', 'serverpath', 'serverpath', self.dir_path)
         if self.dir_path:
             self.ledt1.setText(self.dir_path)    #将路径显示在文本框中
     
@@ -215,8 +223,8 @@ class Conan_ui(QtGui.QMainWindow):
         qp.end()
     
     def start_server(self):
-        if os.path.exists(self.dir_path+'\conanexiles\ConanSandboxServer.exe'):
-            os.system('%s\conanexiles\ConanSandboxServer.exe -log' % self.dir_path)    #运行服务端
+        if os.path.exists(self.dir_path+'\ConanSandboxServer.exe'):
+            os.system('%s\ConanSandboxServer.exe -log' % self.dir_path)    #运行服务端
         else:
             self.error_jump(u'未找到文件，请选择正确的路径')
             
@@ -231,24 +239,6 @@ class Conan_ui(QtGui.QMainWindow):
         else:
             self.chkb2_value = 'False'
             
-    def modify_ini(self, file_name, section_name, attribute_name, update_value): #修改ini内容
-        config = ConfigParser.ConfigParser()
-        config.optionxform = str
-        config.read(file_name)
-        if update_value == '':    #如果没有输入，则不做改变
-            pass
-        else:
-            config.set(section_name, attribute_name, update_value)
-        config.write(open(file_name, 'w+'))
-
-    def modifiy_ini_(self):
-        self.modify_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerName', self.ledt2.text())
-        self.modify_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerPassword', self.ledt3.text())
-        self.modify_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultGame.ini', '/Script/Engine.GameSession', 'MaxPlayers', self.ledt4.text())
-        self.modify_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'AdminPassword', self.ledt_ex1.text())
-        self.modify_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'PVPEnabled', self.chkb1_value)
-        self.modify_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'DropEquipmentOnDeath', self.chkb2_value)
-        
     def error_jump(self, error_message):    #弹出错误提示窗口
         self.msgb1 = QtGui.QMessageBox.warning(self,
                                                "Warning",  
@@ -267,7 +257,7 @@ class Conan_ui(QtGui.QMainWindow):
         sub_proc.start()
     
     def ctrl_c(self):    #寻找窗口，并发送ctrl+c关闭窗口
-        win = win32gui.FindWindow(None,  self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerName') + ' - Conan Exiles - press Ctrl+C to shutdown')
+        win = win32gui.FindWindow(None,  self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerName') + ' - Conan Exiles - press Ctrl+C to shutdown')
         
         if win:
             win32gui.ShowWindow(win,1)   
@@ -280,28 +270,46 @@ class Conan_ui(QtGui.QMainWindow):
         else:
             pass
     
+    def modify_ini(self, file_name, section_name, attribute_name, update_value): #修改ini内容
+        config = ConfigParser.ConfigParser()
+        config.optionxform = str
+        config.read(file_name)
+        if update_value == '':    #如果没有输入，则不做改变
+            pass
+        else:
+            config.set(section_name, attribute_name, update_value)
+        config.write(open(file_name, 'w+'))
+
+    def modifiy_ini_(self):
+        self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerName', self.ledt2.text())
+        self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerPassword', self.ledt3.text())
+        self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultGame.ini', '/Script/Engine.GameSession', 'MaxPlayers', self.ledt4.text())
+        self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'AdminPassword', self.ledt_ex1.text())
+        self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'PVPEnabled', self.chkb1_value)
+        self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'DropEquipmentOnDeath', self.chkb2_value)
+    
     def get_ini(self, path, section, key):    #读取ini文件中的配置
         config = ConfigParser.ConfigParser()
         config.read(path)
         return config.get(section, key)
         
     def set_default(self):    #读取修改前的设置并显示在文本框中
-        if os.path.exists(self.dir_path + '\conanexiles\ConanSandbox\Saved\Config\WindowsServer\ServerSettings.ini'):
-            self.ledt2.setText(self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerName'))
-            self.ledt3.setText(self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerPassword'))
-            self.ledt4.setText(self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultGame.ini', '/Script/Engine.GameSession', 'MaxPlayers'))
-            self.ledt_ex1.setText(self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'AdminPassword'))
+        if os.path.exists(self.dir_path + '\ConanSandbox\Saved\Config\WindowsServer\ServerSettings.ini'):
+            self.ledt2.setText(self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerName'))
+            self.ledt3.setText(self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultEngine.ini', 'OnlineSubsystem', 'ServerPassword'))
+            self.ledt4.setText(self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultGame.ini', '/Script/Engine.GameSession', 'MaxPlayers'))
+            self.ledt_ex1.setText(self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'AdminPassword'))
             
-            if self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'PVPEnabled') == 'True':    #检查单选框初始状态        
+            if self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'PVPEnabled') == 'True':    #检查单选框初始状态        
                 self.chkb1.setChecked (True)
             else:
                 self.chkb1.setChecked (False)
-            if self.get_ini(self.dir_path + '\conanexiles\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'DropEquipmentOnDeath') == 'True':    #检查单选框初始状态        
+            if self.get_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'DropEquipmentOnDeath') == 'True':    #检查单选框初始状态        
                 self.chkb2.setChecked (True)
             else:
                 self.chkb2.setChecked (False)
         else:
-            self.error_jump(u'服务端路径错误')
+            self.error_jump(u'未检测到配置文件，请先运行一次服务端或检查路径是否错误')
 #            self.ledt2.setReadOnly(True)
 #            self.ledt3.setReadOnly(True)
 #            self.ledt4.setReadOnly(True)
@@ -317,7 +325,7 @@ class Conan_ui(QtGui.QMainWindow):
 #            self.ledt14.setReadOnly(True)
 #            self.ledt15.setReadOnly(True)
 #            self.ledt16.setReadOnly(True)
-        
+    
     def center(self):    #让窗口显示在屏幕中央
         qr = self.frameGeometry()
         cp = QtGui.QDesktopWidget().availableGeometry().center()
