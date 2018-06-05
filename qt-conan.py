@@ -12,13 +12,7 @@ class Conan_ui(QtGui.QMainWindow):
         self.area_2()
         self.area_3()
         self.area_4()
-        if self.get_ini('setting.ini', 'serverpath', 'serverpath'):    #从setting.ini中读取上次保存的服务端路径
-            self.ledt1.setText(self.get_ini('setting.ini', 'serverpath', 'serverpath'))
-            self.dir_path = self.get_ini('setting.ini', 'serverpath', 'serverpath')    
-        else:
-            self.dir_path = 'd:\\'
-        self.chkb1_value = 'False'  #单选框的默认值
-        self.chkb2_value = 'False'
+        
         self.main_window()
         
     def area_1(self):    
@@ -176,7 +170,15 @@ class Conan_ui(QtGui.QMainWindow):
         self.statusBar()
         self.update()    #update()触发paintEvent()画线
         self.show()
-
+        
+        if self.get_ini('setting.ini', 'serverpath', 'serverpath'):    #从setting.ini中读取上次保存的服务端路径
+            self.ledt1.setText(self.get_ini('setting.ini', 'serverpath', 'serverpath'))
+            self.dir_path = self.get_ini('setting.ini', 'serverpath', 'serverpath')    
+        else:
+            self.dir_path = 'd:\\'
+        self.chkb1_value = 'False'  #单选框的默认值
+        self.chkb2_value = 'False'
+        
     def install_steamcmd(self):    #安装steamcmd并且安装柯南服务端
         zip_path = os.path.join(self.dir_path, 'steamcmd.zip') #保存路径
         if os.path.exists(self.dir_path):
@@ -207,7 +209,7 @@ class Conan_ui(QtGui.QMainWindow):
                     os.system('%s\steamcmd\steamcmd.exe +force_install_dir %s +login anonymous +app_update 443030 validate' % (self.dir_path, self.dir_path)) #运行steamcmd.exe,并下载服务端
     
     def select_dir(self):    #弹出选择路径窗口
-        self.dir_path = unicode(QtGui.QFileDialog.getExistingDirectory(self, u"选择服务端安装路径", "D:\\")) + 'conanexiles'
+        self.dir_path = unicode(QtGui.QFileDialog.getExistingDirectory(self, u"选择服务端安装路径", "D:\\")) + "\conanexiles"
         self.modify_ini('setting.ini', 'serverpath', 'serverpath', self.dir_path)
         if self.dir_path:
             self.ledt1.setText(self.dir_path)    #将路径显示在文本框中
@@ -288,10 +290,10 @@ class Conan_ui(QtGui.QMainWindow):
         self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'PVPEnabled', self.chkb1_value)
         self.modify_ini(self.dir_path + '\ConanSandbox\Config\DefaultServerSettings.ini', 'ServerSettings', 'DropEquipmentOnDeath', self.chkb2_value)
     
-    def get_ini(self, path, section, key):    #读取ini文件中的配置
+    def get_ini(self, file_name, section_name, attribute_name):    #读取ini文件中的配置
         config = ConfigParser.ConfigParser()
-        config.read(path)
-        return config.get(section, key)
+        config.read(file_name)
+        return config.get(section_name, attribute_name)
         
     def set_default(self):    #读取修改前的设置并显示在文本框中
         if os.path.exists(self.dir_path + '\ConanSandbox\Saved\Config\WindowsServer\ServerSettings.ini'):
