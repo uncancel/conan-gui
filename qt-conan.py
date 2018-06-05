@@ -1,5 +1,5 @@
 #-*- coding: utf-8 -*-
-
+#test
 from PyQt4 import QtGui, QtCore
 
 import sys, os, urllib, zipfile, ConfigParser, win32con, win32api, win32gui, threading
